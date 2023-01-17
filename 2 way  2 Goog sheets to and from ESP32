@@ -1,0 +1,312 @@
+#include <Arduino.h>
+
+/*
+*THIS HAS WORKING 2 way communication with Goog Sheets as is
+*Heat On Off Log and TempSettingsControlsDashboard                           1/17/2023 working
+*
+*/
+
+#include <WiFi.h>
+#include <HTTPClient.h>
+
+//const char * ssid = "Fios-JZOSU";
+//const char * password = "gem7070ace208pin";
+const char * ssid = "AcornLumaNet";
+const char * password = "Rockwell";
+
+
+String scriptIDforSend = "AKfycbywnQ7VxWyO6PjzyXNyFmdwVZcgWlqqWDbnvceSchCGGp-9oNxkhnbg_bU8yxLBXJ1tjg";
+String sendToGoogle = "https://script.google.com/macros/s/AKfycbxLYN5PzL8wzTkypwBRHHbl66eBIzDlGYys3B1LGv13/dev";
+String scriptIDforGet ="AKfycbygwZlLjs6yfvXSIla9D-vwZj_Y55Hcm4gFvdcACpb3KDCCOhjFVhsw582XWlDTg9lR0A";
+String getFromGoogle = "https://script.google.com/macros/s/AKfycbygwZlLjs6yfvXSIla9D-vwZj_Y55Hcm4gFvdcACpb3KDCCOhjFVhsw582XWlDTg9lR0A/exec?read=I100";
+int deviceID = 18;
+
+const int ARRAY_SIZE = 30;
+int receivedSettingsCSV[ARRAY_SIZE] = {0,64,65,65,66,66,67,67,68,68,69,69,70,70,71,71,0,75,40,41,20,13,7,70,58,630,1530,1100,3};
+String payload;
+
+
+// randomGen variables
+String str = "";//for random gen which will become getESPnowCSV();
+const int RAND_ARRAY_SIZE = 20;
+int randomArray[RAND_ARRAY_SIZE]={59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 1};
+const int numOfDevices = 20;
+bool goingUp=1;
+int itsYourTurn=10;
+
+unsigned long lastTime = 0;
+unsigned long timerDelay = 8000;
+int counter=1;
+
+
+//Setup
+void setup() {
+  // put your setup code here, to run once:
+Serial.begin(115200);
+  Serial.println();
+  Serial.print("Your ESP Board MAC Address is:  ");
+  Serial.println(WiFi.macAddress());
+  // if analog input pin 0 is unconnected, random analog
+  // noise will cause the call to randomSeed() to generate
+  // different seed numbers each time the sketch runs.
+  // randomSeed() will then shuffle the random function.
+WiFi.begin(ssid, password);
+  Serial.println("Connecting");
+  while(WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+  Serial.println("");
+  Serial.print("Connected to WiFi network with IP Address: ");
+  Serial.println(WiFi.localIP());
+ 
+  Serial.println("Timer set to 5 seconds (timerDelay variable), it will take 5 seconds before publishing the first reading.");
+  randomSeed(analogRead(0));
+}
+
+void convertCSVtoIntArray(){
+        int commaIndex1 = payload.indexOf(',');
+        int commaIndex2 = payload.indexOf(',',commaIndex1 +1);
+        int commaIndex3 = payload.indexOf(',',commaIndex2 +1);
+        int commaIndex4 = payload.indexOf(',',commaIndex3 +1);
+        int commaIndex5 = payload.indexOf(',',commaIndex4 +1);
+        int commaIndex6 = payload.indexOf(',',commaIndex5 +1);
+        int commaIndex7 = payload.indexOf(',',commaIndex6 +1);
+        int commaIndex8 = payload.indexOf(',',commaIndex7 +1);
+        int commaIndex9 = payload.indexOf(',',commaIndex8 +1);
+        int commaIndex10 = payload.indexOf(',',commaIndex9 +1);
+        int commaIndex11 = payload.indexOf(',',commaIndex10 +1);
+        int commaIndex12 = payload.indexOf(',',commaIndex11 +1);
+        int commaIndex13 = payload.indexOf(',',commaIndex12 +1);
+        int commaIndex14 = payload.indexOf(',',commaIndex13 +1);
+        int commaIndex15 = payload.indexOf(',',commaIndex14 +1);
+        int commaIndex16 = payload.indexOf(',',commaIndex15 +1);
+        int commaIndex17 = payload.indexOf(',',commaIndex16 +1);
+        int commaIndex18 = payload.indexOf(',',commaIndex17 +1);
+        int commaIndex19 = payload.indexOf(',',commaIndex18 +1);
+        int commaIndex20 = payload.indexOf(',',commaIndex19 +1);
+        int commaIndex21 = payload.indexOf(',',commaIndex20 +1);
+        int commaIndex22 = payload.indexOf(',',commaIndex21 +1);
+        int commaIndex23 = payload.indexOf(',',commaIndex22 +1);
+        int commaIndex24 = payload.indexOf(',',commaIndex23 +1);       
+        int commaIndex25 = payload.indexOf(',',commaIndex24 +1);
+        int commaIndex26 = payload.indexOf(',',commaIndex25 +1);
+        int commaIndex27 = payload.indexOf(',',commaIndex26 +1);
+        int commaIndex28 = payload.indexOf(',',commaIndex27 +1);
+        int commaIndex29 = payload.indexOf(',',commaIndex28 +1);
+        int commaIndex30 = payload.indexOf(',',commaIndex29 +1);
+        //int commaIndex31 = payload.indexOf(',',commaIndex30 +1);
+
+        String val1 = payload.substring(0, commaIndex1);
+        String val2 = payload.substring(commaIndex1+1, commaIndex2);
+        String val3 = payload.substring(commaIndex2+1, commaIndex3);
+        String val4 = payload.substring(commaIndex3+1, commaIndex4);
+        String val5 = payload.substring(commaIndex4+1, commaIndex5);
+        String val6 = payload.substring(commaIndex5+1, commaIndex6);
+        String val7 = payload.substring(commaIndex6+1, commaIndex7);
+        String val8 = payload.substring(commaIndex7+1, commaIndex8);
+        String val9 = payload.substring(commaIndex8+1, commaIndex9);
+        String val10 = payload.substring(commaIndex9+1, commaIndex10);
+        String val11 = payload.substring(commaIndex10+1, commaIndex11);
+        String val12 = payload.substring(commaIndex11+1, commaIndex12);
+        String val13 = payload.substring(commaIndex12+1, commaIndex13);
+        String val14 = payload.substring(commaIndex13+1, commaIndex14);
+        String val15 = payload.substring(commaIndex14+1, commaIndex15);
+        String val16 = payload.substring(commaIndex15+1, commaIndex16);
+        String val17 = payload.substring(commaIndex16+1, commaIndex17);
+        String val18 = payload.substring(commaIndex17+1, commaIndex18);
+        String val19 = payload.substring(commaIndex18+1, commaIndex19);
+        String val20 = payload.substring(commaIndex19+1, commaIndex20);
+        String val21 = payload.substring(commaIndex20+1, commaIndex21);
+        String val22 = payload.substring(commaIndex21+1, commaIndex22);
+        String val23 = payload.substring(commaIndex22+1, commaIndex23);
+        String val24 = payload.substring(commaIndex23+1, commaIndex24);
+        String val25 = payload.substring(commaIndex24+1, commaIndex25);
+        String val26 = payload.substring(commaIndex25+1, commaIndex26);
+        String val27 = payload.substring(commaIndex26+1, commaIndex27);
+        String val28 = payload.substring(commaIndex27+1, commaIndex28);
+        String val29 = payload.substring(commaIndex28+1, commaIndex29);
+        String val30 = payload.substring(commaIndex29+1, commaIndex30);
+        //String val31 = payload.substring(commaIndex30+1, commaIndex31);
+
+        int temp1 = val1.toInt();
+        int temp2 = val2.toInt();
+        int temp3 = val3.toInt();
+        int temp4 = val4.toInt();
+        int temp5 = val5.toInt();
+        int temp6 = val6.toInt();
+        int temp7 = val7.toInt();
+        int temp8 = val8.toInt();
+        int temp9 = val9.toInt();
+        int temp10 = val10.toInt();
+        int temp11 = val11.toInt();
+        int temp12 = val12.toInt();
+        int temp13 = val13.toInt();
+        int temp14 = val14.toInt();
+        int temp15 = val15.toInt();
+        int temp16 = val16.toInt();
+        int curAmbTemp = val17.toInt();
+        int highTempLimit = val18.toInt();
+        int lowTempLimit = val19.toInt();
+        int shutDownStatus = val20.toInt();
+        int agressiveAwayDrop = val21.toInt();
+        int moderateAwayDrop = val22.toInt();
+        int mildAwayDrop = val23.toInt();
+        int ambientSetPointDiffAwayDrop = val24.toInt();
+        int ambientThresholdOverride = val25.toInt();
+        int startTime = val26.toInt();
+        int endTime1st = val27.toInt();
+        int endTime2nd = val28.toInt();
+        int schedOffsetOptions = val29.toInt();
+        int notUsedYet= val30.toInt();
+        
+  
+  int receivedSettingsCSV[30] = {temp1, temp2, temp3, temp4, temp5, temp6, temp7, temp8, temp9, temp10, temp11, temp12, temp13, temp14, temp15, temp16, curAmbTemp, highTempLimit, lowTempLimit,
+  shutDownStatus, agressiveAwayDrop, moderateAwayDrop, mildAwayDrop, ambientSetPointDiffAwayDrop, ambientThresholdOverride, startTime, endTime1st, endTime2nd, schedOffsetOptions,notUsedYet};
+
+}
+
+
+void getDesiredTempSettingsCSV(){
+    HTTPClient http;
+  //String url = "https://script.google.com/macros/s/AKfycbx8QfX0oY0BvOSNl9-VaF9D6cVdrUslcoCaIbsKoP6gfcb4O6EL3eycXfPH1a02HURWJw/exec?read";
+Serial.print("Making a request");
+  http.begin(getFromGoogle.c_str()); //Specify the URL and certificate
+  http.setFollowRedirects(HTTPC_STRICT_FOLLOW_REDIRECTS);
+  int httpCode = http.GET();
+  
+    if (httpCode > 0) { //Check for the returning code
+        payload = http.getString();
+        Serial.println(payload);
+        convertCSVtoIntArray();
+        Serial.println("payload should have printed");
+    }
+    else {
+      Serial.println("Error on HTTP request.");
+    }
+    http.end();
+}
+
+void goingUpOrDown(){
+  Serial.println("going up is currently");
+  Serial.print(goingUp);
+  switch (goingUp){
+case 1:
+{
+Serial.print("going up");
+itsYourTurn=itsYourTurn+1;
+randomArray[19]=itsYourTurn;
+Serial.println(itsYourTurn);
+break;
+}
+case 0:
+{
+Serial.print("going down");
+itsYourTurn=itsYourTurn-1;
+randomArray[19]=itsYourTurn;
+Serial.println(itsYourTurn);
+  break;
+}
+}
+return;
+}
+void genRandomNum() {
+  str="";
+  /*
+  // print a random number from 1 to 299 THIS WAS JUST GENERATING RANDOM VALUES
+  for(int ii = 0; ii < numOfDevices; ii++){
+  randomArray[ii] = random(300);
+  Serial.println(randomArray[ii]);
+  }
+  */
+  if(itsYourTurn==deviceID){
+  randomArray[itsYourTurn] = random(64,70);
+randomArray[2]=100;  //this would be replaced with randomArray[deviceNum]=thisDeviceReadTemp
+//this is why it may be advantageous to unicast with a counting checkOR OR OR
+// ONLY the device sending to Google Sheets sends the full csv
+// or 
+  }
+  // print a random number from 10 to 19
+  //randomArray[1] = random(10, 20);
+  //Serial.println(randomArray[1]);
+if(itsYourTurn>=numOfDevices){goingUp=0;}
+if(itsYourTurn<=1){goingUp=1;}
+goingUpOrDown();
+    for (int i = 0; i < RAND_ARRAY_SIZE; i++) {
+    str.concat(randomArray[i]);
+    if (i < RAND_ARRAY_SIZE - 1) {
+      str.concat(",");
+    }
+  }
+  Serial.println(str);
+  //https://script.google.com/macros/s/AKfycbxLYN5PzL8wzTkypwBRHHbl66eBIzDlGYys3B1LGv13/dev?csvFromEsp=str
+Serial.println(WiFi.macAddress());
+  delay(1000);
+}
+void postToGoogleSheets(){
+  String serverName="https://script.google.com/macros/s/AKfycbwP0RrMiBIzPA8HpUT6yCdCyPlt-71-evZuGSwF4IHuTFjqksnKpD9YEUNJWqp615JP/dev";
+                                                      
+  //Send an HTTP POST request every 10 minutes
+  if ((millis() - lastTime) > timerDelay) {
+    //Check WiFi connection status
+    if(WiFi.status()== WL_CONNECTED){
+      HTTPClient http;
+      counter = counter*2;
+      if(counter>800000){counter=1;}
+      //String serverPath = serverName + "?date=1103&sensor="+counter;
+      //String serverPath = serverName + "?csvFromEsp="+(counter);
+      //String serverPath = "https://script.google.com/macros/s/AKfycbwP0RrMiBIzPA8HpUT6yCdCyPlt-71-evZuGSwF4IHuTFjqksnKpD9YEUNJWqp615JP/dev?csvToEsp=555";
+      String serverPath = "https://script.google.com/macros/s/AKfycbwP0RrMiBIzPA8HpUT6yCdCyPlt-71-evZuGSwF4IHuTFjqksnKpD9YEUNJWqp615JP/dev?csvToEsp="+str;
+      
+      // Your Domain name with URL path or IP address with path
+      http.begin(serverPath.c_str());
+      //http.begin(serverPath);
+      //Serial.print(serverPath.c_str());
+      // If you need Node-RED/server authentication, insert user and password below
+      //http.setAuthorization("REPLACE_WITH_SERVER_USERNAME", "REPLACE_WITH_SERVER_PASSWORD");
+
+      //trying to fix 302 redirect here
+      //http.setFollowRedirects(HTTPC_FORCE_FOLLOW_REDIRECTS);
+      
+      // Send HTTP GET request
+      int httpResponseCode = http.GET();
+      
+      if (httpResponseCode>0) {
+        Serial.println("HTTP Response code: ");
+        Serial.println(httpResponseCode);
+        //String payload = http.getString();
+        //Serial.println(payload);
+      }
+      else {
+        Serial.print("Error code: ");
+        Serial.println(httpResponseCode);
+      }
+      // Free resources
+      http.end();
+    }
+    else {
+      Serial.println("WiFi Disconnected");
+    }
+    lastTime = millis();
+  }
+}
+
+void actOnTempSettingsControlData(){
+  /*
+   * This is where we will determine what simple functions will be called
+   * function ideas... calculateAwayDrop(), if(holiday==true), 
+   * if(worktime){setTemp=recievedSettingArray[deviceID-1]else{setTemp=
+   * 
+  */
+}
+
+void loop() {
+  // put your main code here, to run repeatedly:
+getDesiredTempSettingsCSV(); //this is what obtains settings values from the TempSettingsControlDashboard
+//Serial.println(receivedSettingsCSV[0]);
+//Serial.println(receivedSettingsCSV[1]);
+//Serial.println(receivedSettingsCSV[28]);
+//Serial.println(receivedSettingsCSV[29]);
+genRandomNum(); //this is technically just generating mock values BUT is assembling them for csvString to post
+postToGoogleSheets(); //this posts the csvString to the Heat On Off Logging Google Sheet
+}
